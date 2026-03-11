@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
+	"github.com/openclaw/openclaw-go/internal/infra"
 	"github.com/rs/zerolog/log"
 )
 
@@ -98,7 +99,7 @@ func (c *GatewayChatClient) Connect() error {
 	}
 	wsURL := c.opts.URL
 	if wsURL == "" {
-		wsURL = fmt.Sprintf("ws://127.0.0.1:%d/ws", 18789)
+		wsURL = fmt.Sprintf("ws://127.0.0.1:%d/ws", infra.DefaultGatewayPort)
 	}
 	conn, _, err := dialer.Dial(wsURL, headers)
 	if err != nil {

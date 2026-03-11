@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"syscall"
@@ -18,7 +19,26 @@ const (
 	DaemonStatusUnknown DaemonStatus = "unknown"
 )
 
-const pidFile = "/tmp/openclaw-gateway.pid"
+// pidFilePath returns the PID file path under ~/.openclaw/run/ which is
+// owned by the user and not world-writable like /tmp.
+func pidFilePath() string {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		home = "."
+	}
+	runDir := filepath.Join(home, ".openclaw", "run")
+	return filepath.Join(runDir, "openclaw-gateway.pid")
+}
+
+// ensureRunDir creates the run directory with 0700 permissions.
+func ensureRunDir() error {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return fmt.Errorf("cannot determine home directory: %w", err)
+	}
+	runDir := filepath.Join(home, ".openclaw", "run")
+	return os.MkdirAll(runDir, 0o700)
+}
 
 // GetStatus returns the current daemon status.
 func GetStatus() DaemonStatus {
@@ -64,11 +84,11 @@ func StopDaemon() error {
 	if err := proc.Kill(); err != nil {
 		return fmt.Errorf("failed to stop daemon: %w", err)
 	}
-	return os.Remove(pidFile)
+	return os.Remove(pidFilePath())
 }
 
 func readPID() (int, error) {
-	data, err := os.ReadFile(pidFile)
+	data, err := os.ReadFile(pidFilePath())
 	if err != nil {
 		return 0, err
 	}
@@ -80,5 +100,8 @@ func readPID() (int, error) {
 }
 
 func writePID(pid int) error {
-	return os.WriteFile(pidFile, []byte(strconv.Itoa(pid)), 0o600)
+	if err := ensureRunDir(); err != nil {
+		return fmt.Errorf("failed to create run directory: %w", err)
+	}
+	return os.WriteFile(pidFilePath(), []byte(strconv.Itoa(pid)), 0o600)
 }

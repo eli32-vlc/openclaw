@@ -1,14 +1,12 @@
 package infra
 
 import (
-	"os"
-
+	"github.com/openclaw/openclaw-go/internal/logging"
 	"github.com/rs/zerolog"
-	"github.com/rs/zerolog/log"
 )
 
-// LogLevel represents a log level.
-type LogLevel string
+// LogLevel represents a log level string understood by InitLogging.
+type LogLevel = string
 
 const (
 	LogLevelSilent LogLevel = "silent"
@@ -20,30 +18,14 @@ const (
 	LogLevelTrace  LogLevel = "trace"
 )
 
-// InitLogging initializes the zerolog logger.
+// InitLogging initializes the logger. It delegates to the logging package
+// so there is a single source of truth for log initialization.
 func InitLogging(level LogLevel) {
-	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
-	switch level {
-	case LogLevelSilent:
-		zerolog.SetGlobalLevel(zerolog.Disabled)
-	case LogLevelFatal:
-		zerolog.SetGlobalLevel(zerolog.FatalLevel)
-	case LogLevelError:
-		zerolog.SetGlobalLevel(zerolog.ErrorLevel)
-	case LogLevelWarn:
-		zerolog.SetGlobalLevel(zerolog.WarnLevel)
-	case LogLevelInfo:
-		zerolog.SetGlobalLevel(zerolog.InfoLevel)
-	case LogLevelDebug:
-		zerolog.SetGlobalLevel(zerolog.DebugLevel)
-	case LogLevelTrace:
-		zerolog.SetGlobalLevel(zerolog.TraceLevel)
-	default:
-		zerolog.SetGlobalLevel(zerolog.InfoLevel)
-	}
+	logging.InitLogging(level, "", true)
 }
 
-// SubsystemLogger returns a logger with a subsystem field.
+// SubsystemLogger returns a logger tagged with the given subsystem.
+// It delegates to the logging package.
 func SubsystemLogger(subsystem string) zerolog.Logger {
-	return log.With().Str("subsystem", subsystem).Logger()
+	return logging.SubsystemLogger(subsystem)
 }
